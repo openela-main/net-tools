@@ -1,0 +1,13 @@
+diff --git a/lib/inet6_gr.c.old b/lib/inet6_gr.c
+index 4e26d30..2ff53a2 100644
+--- a/lib/inet6_gr.c.old
++++ b/lib/inet6_gr.c
+@@ -146,7 +146,7 @@ int rprint_fib6(int ext, int numeric)
+ 	    strcat(flags, "f");
+ 
+ 	/* Print the info. */
+-	printf("%-30s %-26s %-4s %-3d %-1d%6d %s\n",
++	printf("%-30s %-26s %-4s %-3d %-1d %6d %s\n",
+ 	       addr6, naddr6, flags, metric, refcnt, use, iface);
+     }
+ 
