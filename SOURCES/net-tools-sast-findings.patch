@@ -1,0 +1,188 @@
+diff --git a/netstat.c b/netstat.c
+index d04f0ff..17f680a 100644
+--- a/netstat.c
++++ b/netstat.c
+@@ -359,7 +359,7 @@ static int extract_type_1_socket_inode(const char lname[], unsigned long * inode
+     if (lname[strlen(lname)-1] != ']') return(-1);
+ 
+     {
+-        char inode_str[strlen(lname + 1)];  /* e.g. "12345" */
++        char inode_str[strlen(lname) + 1];  /* e.g. "12345" */
+         const int inode_str_len = strlen(lname) - PRG_SOCKET_PFXl - 1;
+         char *serr;
+ 
+diff --git a/lib/ipx_gr.c b/lib/ipx_gr.c
+index 2fa717c..fe9dd13 100644
+--- a/lib/ipx_gr.c
++++ b/lib/ipx_gr.c
+@@ -57,6 +57,7 @@ int IPX_rprint(int options)
+ 
+     if ((ap = get_afntype(AF_IPX)) == NULL) {
+ 	EINTERN("lib/ipx_rt.c", "AF_IPX missing");
++      fclose(fp);
+ 	return (-1);
+     }
+ 
+diff --git a/lib/unix.c b/lib/unix.c
+index 8e5dbd1..47a93e6 100644
+--- a/lib/unix.c
++++ b/lib/unix.c
+@@ -39,7 +39,7 @@ static const char *UNSPEC_print(const char *ptr)
+     unsigned int i;
+ 
+     pos = buff;
+-    for (i = 0; i < sizeof(struct sockaddr); i++) {
++    for (i = 0; i < sizeof(struct sockaddr) - 1; i++) {
+ 	pos += sprintf(pos, "%02X-", (*ptr++ & 0377));
+     }
+     buff[strlen(buff) - 1] = '\0';
+diff --git a/lib/netrom.c b/lib/netrom.c
+index 6bcde2d..f76811a 100644
+--- a/lib/netrom.c
++++ b/lib/netrom.c
+@@ -75,7 +75,7 @@ static const char *NETROM_sprint(const struct sockaddr_storage *sasp, int numeri
+ {
+     const struct sockaddr_ax25 *ax25_sap = (const struct sockaddr_ax25 *)sasp;
+     const struct sockaddr *sap = (const struct sockaddr *)sasp;
+-    char buf[64];
++    static char buf[64];
+     if (sap->sa_family == 0xFFFF || sap->sa_family == 0)
+ 	return safe_strncpy(buf, _("[NONE SET]"), sizeof(buf));
+     return NETROM_print(ax25_sap->sax25_call.ax25_call);
+diff --git a/lib/masq_info.c b/lib/masq_info.c
+index cbfb2be..4224fe1 100644
+--- a/lib/masq_info.c
++++ b/lib/masq_info.c
+@@ -105,7 +105,7 @@ static int read_masqinfo(FILE * f, struct masq *mslist, int nmslist)
+     for (nread = 0; nread < nmslist; nread++) {
+ 	ms = &mslist[nread];
+ 	if (has_pdelta) {
+-	    if ((n = fscanf(f, " %s %"PRIx32":%hX %"PRIx32":%hX %hX %lX %hd %hd %lu",
++	    if ((n = fscanf(f, " %255s %"PRIx32":%hX %"PRIx32":%hX %hX %lX %hd %hd %lu",
+ 			    buf,
+ 			    &src_addr, &ms->sport,
+ 			    &dst_addr, &ms->dport,
+@@ -115,7 +115,7 @@ static int read_masqinfo(FILE * f, struct masq *mslist, int nmslist)
+ 	    memcpy(&ms->src.sin_addr.s_addr, &src_addr, 4);
+ 	    memcpy(&ms->dst.sin_addr.s_addr, &dst_addr, 4);
+ 	} else {
+-	    if ((n = fscanf(f, " %s %"PRIx32":%hX %"PRIx32":%hX %hX %lX %hd %lu",
++	    if ((n = fscanf(f, " %255s %"PRIx32":%hX %"PRIx32":%hX %hX %lX %hd %lu",
+ 			    buf,
+ 			    &src_addr, &ms->sport,
+ 			    &dst_addr, &ms->dport,
+diff --git a/ifconfig.c b/ifconfig.c
+index 2b8cbbb..9a64f9a 100644
+--- a/ifconfig.c
++++ b/ifconfig.c
+@@ -964,12 +964,15 @@ int main(int argc, char **argv)
+ 	   exit(1);
+ 	}
+ 	if (ap->input(0, host, &_sa) < 0) {
+-	    if (ap->herror)
+-	    	ap->herror(host);
+-	    else
+-	    	fprintf(stderr,_("ifconfig: error resolving '%s' to set address for af=%s\n"), host, ap->name); fprintf(stderr,
+-	    _("ifconfig: `--help' gives usage information.\n")); exit(1);
++	  if (ap->herror)
++	    ap->herror(host);
++	  else
++	    fprintf(stderr,_("ifconfig: error resolving '%s' to set address for af=%s\n"), host, ap->name);
++
++	  fprintf(stderr, _("ifconfig: `--help' gives usage information.\n"));
++	  exit(1);
+ 	}
++
+ 	memcpy(&ifr.ifr_addr, sa, sizeof(struct sockaddr));
+ 	{
+ 	    int r = 0;		/* to shut gcc up */
+diff --git a/lib/netrom_gr.c b/lib/netrom_gr.c
+index ec82fe8..bd532fb 100644
+--- a/lib/netrom_gr.c
++++ b/lib/netrom_gr.c
+@@ -43,8 +43,14 @@ int NETROM_rprint(int options)
+     if (!f2) perror(_PATH_PROCNET_NR_NEIGH);
+ 
+     if (f1 == NULL || f2 == NULL) {
+-	printf(_("NET/ROM not configured in this system.\n"));
+-	return 1;
++      printf(_("NET/ROM not configured in this system.\n"));
++      if (f1)
++        fclose(f1);
++
++      if (f2)
++        fclose(f2);
++
++      return 1;
+     }
+     printf(_("Kernel NET/ROM routing table\n"));
+     printf(_("Destination  Mnemonic  Quality  Neighbour  Iface\n"));
+diff --git a/statistics.c.old b/statistics.c
+index 0b5a6f3..0e50f8d 100644
+--- a/statistics.c.old
++++ b/statistics.c
+@@ -571,8 +571,12 @@ int parsesnmp(int flag_raw, int flag_tcp, int flag_udp, int flag_sctp)
+ 	if (ferror(f)) {
+ 	    perror("/proc/net/sctp/snmp");
+ 	    fclose(f);
++      return(1);
+ 	}
++
++        fclose(f);
+     }
++
+     return(0);
+ }
+ 
+diff --git a/lib/inet_gr.c b/lib/inet_gr.c
+index b172d65..5dcab82 100644
+--- a/lib/inet_gr.c
++++ b/lib/inet_gr.c
+@@ -289,27 +289,28 @@ int rprint_cache(int ext, int numeric)
+ 
+     if (format == 2) {
+       if (ext >= 3)
+-	printf(_("Source          Destination     Gateway         "
+-		 "Flags Metric Ref    Use Iface    "
+-		 "MSS   Window irtt  TOS HHRef HHUptod     SpecDst\n"));
+-        fmt = proc_gen_fmt(_PATH_PROCNET_RTCACHE, 0, fp,
+-		       "Iface", "%15s",
+-		       "Destination", "%127s",
+-		       "Gateway", "%127s",
+-		       "Flags", "%X",
+-		       "RefCnt", "%d",
+-		       "Use", "%d",
+-		       "Metric", "%d",
+-		       "Source", "%127s",
+-		       "MTU", "%d",
+-		       "Window", "%d",
+-		       "IRTT", "%d",
+-		       "TOS", "%d",
+-		       "HHRef", "%d",
+-		       "HHUptod", "%d",
+-		       "SpecDst", "%127s",
+-		       NULL);
+-      /* "%15s %127s %127s %X %d %d %d %127s %d %d %d %d %d %127s\n" */
++        printf(_("Source          Destination     Gateway         "
++          "Flags Metric Ref    Use Iface    "
++          "MSS   Window irtt  TOS HHRef HHUptod     SpecDst\n"));
++
++      fmt = proc_gen_fmt(_PATH_PROCNET_RTCACHE, 0, fp,
++        "Iface", "%15s",
++        "Destination", "%127s",
++        "Gateway", "%127s",
++        "Flags", "%X",
++        "RefCnt", "%d",
++        "Use", "%d",
++        "Metric", "%d",
++        "Source", "%127s",
++        "MTU", "%d",
++        "Window", "%d",
++        "IRTT", "%d",
++        "TOS", "%d",
++        "HHRef", "%d",
++        "HHUptod", "%d",
++        "SpecDst", "%127s",
++        NULL);
++    /* "%15s %127s %127s %X %d %d %d %127s %d %d %d %d %d %127s\n" */
+     }

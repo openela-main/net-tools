@@ -3,7 +3,7 @@
 Summary: Basic networking tools
 Name: net-tools
 Version: 2.0
-Release: 0.62.%{checkout}%{?dist}
+Release: 0.64.%{checkout}%{?dist}
 License: GPLv2+
 URL: http://sourceforge.net/projects/net-tools/
 
@@ -38,6 +38,7 @@ Patch23: net-tools-interface-name-len.patch
 Patch24: net-tools-correct-exit-code.patch
 Patch25: net-tools-spelling-error.patch
 Patch26: net-tools-route-inet6-output.patch
+Patch27: net-tools-sast-findings.patch
 
 BuildRequires: make
 BuildRequires: bluez-libs-devel
@@ -74,6 +75,7 @@ cp %SOURCE8 ./man/en_US
 %patch24 -p1 -b .exit-codes
 %patch25 -p1 -b .spelling
 %patch26 -p1 -b .route-inet6
+%patch27 -p1 -b .sast
 
 touch ./config.h
 
@@ -146,6 +148,12 @@ install -D -p -m 644 %{SOURCE9} %{buildroot}%{_unitdir}/arp-ethers.service
 %attr(0644,root,root)   %{_unitdir}/arp-ethers.service
 
 %changelog
+* Tue Jun 18 2024 Michal Ruprich <mruprich@redhat.com> - 2.0-0.64.20160912git
+- Resolves: RHEL-40958 - Segmentation fault (core dumped) on netstat -s
+
+* Thu May 09 2024 Michal Ruprich <mruprich@redhat.com> - 2.0-0.63.20160912git
+- Resolves: RHEL-31932 - Addressing findings from static application security testing
+
 * Mon Aug 09 2021 Mohan Boddu <mboddu@redhat.com> - 2.0-0.62.20160912git
 - Rebuilt for IMA sigs, glibc 2.34, aarch64 flags
   Related: rhbz#1991688
